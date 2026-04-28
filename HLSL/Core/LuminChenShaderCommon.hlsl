@@ -30,4 +30,34 @@ inline half3 LC_NormalFromMap(TEXTURE2D_PARAM(normalMap, normalSampler), float2 
     return NormalizeNormalPerPixel(normalWS);
 }
 
+// 基础随机 hash
+float Hash(float x)
+{
+    return frac(sin(x) * 43758.5453f);
+}
+
+float Hash2(float2 uv)
+{
+    return frac(sin(dot(uv, float2(12.9898f, 4.233f))) * 43758.5453f);
+}
+
+// 【核心API】随时间变化的全局随机数 0~1
+float TimeRandom(float time)
+{
+    return Hash(time * 0.15f);
+}
+
+// 带偏移种子 + 时间随机（适合多波浪分层）
+float TimeRandomSeed(float time, float seed)
+{
+    return Hash(time * 0.12f + seed * 123.456f);
+}
+
+// 传入世界坐标 + 时间，区域差异化随机（水面最常用）
+float TimeRandomPos(float3 worldPos, float time)
+{
+    float2 uv = worldPos.xz * 0.01f;
+    return Hash2(uv + float2(time * 0.2f, time * 0.1f));
+}
+
 #endif
