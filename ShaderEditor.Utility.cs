@@ -14,7 +14,7 @@ public partial class ShaderEditor : EditorWindow
             return false;
         }
 
-        if (templateType == ShaderTemplateType.URP3DTemplate && string.IsNullOrWhiteSpace(GetActiveShaderCategory()))
+        if (SupportsShaderCategory() && string.IsNullOrWhiteSpace(GetActiveShaderCategory()))
         {
             message = "Shader Category is required.";
             return false;
@@ -77,7 +77,7 @@ public partial class ShaderEditor : EditorWindow
 
         string materialAssetPath = null;
         string materialResultMessage = string.Empty;
-        if (createMaterial && templateType == ShaderTemplateType.URP3DTemplate)
+        if (createMaterial && SupportsMaterialGeneration())
         {
             MaterialGenerationDecision materialDecision = ResolveMaterialGenerationDecision();
             if (materialDecision.IsCanceled)
@@ -102,7 +102,7 @@ public partial class ShaderEditor : EditorWindow
 
         string dialogMessage = (shaderExists ? "Replaced shader at:\n" : "Created shader at:\n") + shaderFilePath;
 
-        if (createMaterial && templateType == ShaderTemplateType.URP3DTemplate)
+        if (createMaterial && SupportsMaterialGeneration())
         {
             if (!string.IsNullOrEmpty(materialAssetPath))
             {
@@ -170,6 +170,16 @@ public partial class ShaderEditor : EditorWindow
     private string GetFileExtension()
     {
         return templateType == ShaderTemplateType.ComputeShader ? ".compute" : ".shader";
+    }
+
+    private bool SupportsMaterialGeneration()
+    {
+        return templateType != ShaderTemplateType.ComputeShader;
+    }
+
+    private bool SupportsShaderCategory()
+    {
+        return templateType != ShaderTemplateType.ComputeShader;
     }
 
     private string GetSharedHlslFolder()
@@ -244,6 +254,20 @@ public partial class ShaderEditor : EditorWindow
         if (templateType == ShaderTemplateType.ComputeShader)
         {
             shaderName = "NewComputeShader";
+            return;
+        }
+
+        if (templateType == ShaderTemplateType.URPPostProcess)
+        {
+            shaderName = "NewPostProcessShader";
+            selectedShaderCategory = "Custom";
+            return;
+        }
+
+        if (templateType == ShaderTemplateType.URPSkybox)
+        {
+            shaderName = "NewSkyboxShader";
+            selectedShaderCategory = "Custom";
             return;
         }
 

@@ -10,12 +10,14 @@ public partial class ShaderEditor : EditorWindow
     private const string SharedHlslPluginsRoot = "Assets/ShaderPlugins";
     private const string SharedHlslPluginFolder = "Assets/ShaderPlugins/LuminChen-ShaderTemplate/HLSL";
     private const string SharedHlslFileName = "LuminChenShaderCommon.hlsl";
-    private static readonly string[] ShaderTypeLabels = { "3D Template", "Compute Shader" };
+    private static readonly string[] ShaderTypeLabels = { "3D Template", "Post Process Shader", "Skybox Shader", "Compute Shader" };
     private const string NewCategoryOption = "<New Category...>";
 
     private enum ShaderTemplateType
     {
         URP3DTemplate,
+        URPPostProcess,
+        URPSkybox,
         ComputeShader
     }
 

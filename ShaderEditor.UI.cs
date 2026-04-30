@@ -7,7 +7,7 @@ public partial class ShaderEditor : EditorWindow
     {
         EditorGUILayout.Space(8f);
         EditorGUILayout.LabelField("Shader Template Editor", EditorStyles.boldLabel);
-        EditorGUILayout.LabelField("Generate 3D template shaders or compute shaders from configurable editor options.");
+        EditorGUILayout.LabelField("Generate 3D, post process, skybox, or compute shaders from configurable editor options.");
         EditorGUILayout.Space(8f);
 
         using (new EditorGUILayout.HorizontalScope())
@@ -31,12 +31,12 @@ public partial class ShaderEditor : EditorWindow
             {
                 shaderName = EditorGUILayout.TextField("Shader Name", shaderName);
                 shaderOutputFolder = EditorGUILayout.TextField("Shader Folder", shaderOutputFolder);
-                if (templateType == ShaderTemplateType.URP3DTemplate)
+                if (SupportsMaterialGeneration())
                 {
                     materialOutputFolder = EditorGUILayout.TextField("Material Folder", materialOutputFolder);
                 }
 
-                if (templateType == ShaderTemplateType.URP3DTemplate)
+                if (SupportsShaderCategory())
                 {
                     DrawShaderCategoryControls();
                 }
@@ -49,7 +49,7 @@ public partial class ShaderEditor : EditorWindow
                         GUI.FocusControl(null);
                     }
 
-                    if (templateType == ShaderTemplateType.URP3DTemplate &&
+                    if (SupportsMaterialGeneration() &&
                         GUILayout.Button("Choose Material Folder", GUILayout.Width(150f)))
                     {
                         SelectOutputFolder(false);
@@ -71,7 +71,7 @@ public partial class ShaderEditor : EditorWindow
                         {
                             CreateDefaultFolder();
                             shaderOutputFolder = DefaultShaderFolder;
-                            if (templateType == ShaderTemplateType.URP3DTemplate)
+                            if (SupportsMaterialGeneration())
                             {
                                 materialOutputFolder = DefaultMaterialFolder;
                             }
@@ -82,7 +82,7 @@ public partial class ShaderEditor : EditorWindow
                     else if (GUILayout.Button("Use Default Folders", GUILayout.Width(160f)))
                     {
                         shaderOutputFolder = DefaultShaderFolder;
-                        if (templateType == ShaderTemplateType.URP3DTemplate)
+                        if (SupportsMaterialGeneration())
                         {
                             materialOutputFolder = DefaultMaterialFolder;
                         }
@@ -93,7 +93,7 @@ public partial class ShaderEditor : EditorWindow
                     GUILayout.FlexibleSpace();
                 }
 
-                if (templateType == ShaderTemplateType.URP3DTemplate &&
+                if (SupportsMaterialGeneration() &&
                     (!AssetDatabase.IsValidFolder(DefaultShaderFolder) || !AssetDatabase.IsValidFolder(DefaultMaterialFolder)))
                 {
                     EditorGUILayout.HelpBox(
@@ -127,6 +127,14 @@ public partial class ShaderEditor : EditorWindow
                 if (templateType == ShaderTemplateType.ComputeShader)
                 {
                     EditorGUILayout.HelpBox("Compute Shader will generate a basic kernel with RWTexture2D output.", MessageType.None);
+                }
+                else if (templateType == ShaderTemplateType.URPPostProcess)
+                {
+                    EditorGUILayout.HelpBox("Post Process Shader will generate a URP fullscreen blit pass template.", MessageType.None);
+                }
+                else if (templateType == ShaderTemplateType.URPSkybox)
+                {
+                    EditorGUILayout.HelpBox("Skybox Shader will generate a simple cubemap-based skybox template.", MessageType.None);
                 }
                 else
                 {
@@ -167,7 +175,7 @@ public partial class ShaderEditor : EditorWindow
             }
 
             string validationError = shaderValidationError;
-            if (templateType == ShaderTemplateType.URP3DTemplate)
+            if (SupportsMaterialGeneration())
             {
                 GUILayout.Space(8f);
 

@@ -9,6 +9,16 @@ public partial class ShaderEditor : UnityEditor.EditorWindow
             return BuildComputeShaderSource();
         }
 
+        if (templateType == ShaderTemplateType.URPPostProcess)
+        {
+            return BuildPostProcessShaderSource();
+        }
+
+        if (templateType == ShaderTemplateType.URPSkybox)
+        {
+            return BuildSkyboxShaderSource();
+        }
+
         return Build3DTemplateShaderSource();
     }
 
@@ -309,6 +319,135 @@ void CSMain(uint3 id : SV_DispatchThreadID)
 {
     Result[id.xy] = float4(1, 1, 1, 1);
 }";
+    }
+
+    private string BuildPostProcessShaderSource()
+    {
+        string shaderPath = BuildShaderPath();
+
+        return
+$@"Shader ""{shaderPath}""
+{{
+    Properties
+    {{
+        _BlitTexture(""Source"", 2D) = ""white"" {{}}
+        _Intensity(""Intensity"", Range(0, 2)) = 1
+        _Tint(""Tint"", Color) = (1,1,1,1)
+    }}
+    SubShader
+    {{
+        Tags {{ ""RenderPipeline""=""UniversalPipeline"" ""RenderType""=""Opaque"" }}
+        Pass
+        {{
+            Name ""PostProcess""
+            ZWrite Off
+            ZTest Always
+            Cull Off
+            Blend Off
+
+            HLSLPROGRAM
+            #pragma vertex Vert
+            #pragma fragment Frag
+
+{BuildSharedHlslIncludeBlock()}
+            #include ""Packages/com.unity.render-pipelines.core/Runtime/Utilities/Blit.hlsl""
+
+            TEXTURE2D_X(_BlitTexture);
+            SAMPLER(sampler_BlitTexture);
+
+            float _Intensity;
+            float4 _Tint;
+
+            half4 Frag(Varyings input) : SV_Target
+            {{
+                UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input);
+                float2 uv = input.texcoord;
+                half4 color = SAMPLE_TEXTURE2D_X(_BlitTexture, sampler_BlitTexture, uv);
+                color.rgb *= _Tint.rgb * _Intensity;
+                return color;
+            }}
+            ENDHLSL
+        }}
+    }}
+    FallBack Off
+}}";
+    }
+
+    private string BuildSkyboxShaderSource()
+    {
+        string shaderPath = BuildShaderPath();
+
+        return
+$@"Shader ""{shaderPath}""
+{{
+    Properties
+    {{
+        _Tint(""Tint"", Color) = (1,1,1,1)
+        [Gamma]_Exposure(""Exposure"", Range(0, 8)) = 1
+        _Rotation(""Rotation"", Range(0, 360)) = 0
+        _Tex(""Cubemap (HDR)"", Cube) = ""grey"" {{}}
+    }}
+    SubShader
+    {{
+        Tags {{ ""Queue""=""Background"" ""RenderType""=""Background"" ""PreviewType""=""Skybox"" ""RenderPipeline""=""UniversalPipeline"" }}
+        Cull Off
+        ZWrite Off
+
+        Pass
+        {{
+            HLSLPROGRAM
+            #pragma vertex vert
+            #pragma fragment frag
+{BuildSharedHlslIncludeBlock()}
+            #include ""Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl""
+
+            CBUFFER_START(UnityPerMaterial)
+                float4 _Tint;
+                float _Exposure;
+                float _Rotation;
+            CBUFFER_END
+
+            TEXTURECUBE(_Tex);
+            SAMPLER(sampler_Tex);
+
+            struct Attributes
+            {{
+                float4 positionOS : POSITION;
+                UNITY_VERTEX_INPUT_INSTANCE_ID
+            }};
+
+            struct Varyings
+            {{
+                float4 positionHCS : SV_POSITION;
+                float3 directionWS : TEXCOORD0;
+                UNITY_VERTEX_OUTPUT_STEREO
+            }};
+
+            Varyings vert(Attributes input)
+            {{
+                Varyings output;
+                UNITY_SETUP_INSTANCE_ID(input);
+                UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(output);
+
+                VertexPositionInputs positionInputs = GetVertexPositionInputs(input.positionOS.xyz);
+                output.positionHCS = positionInputs.positionCS;
+                output.directionWS = TransformObjectToWorldDir(input.positionOS.xyz);
+                return output;
+            }}
+
+            half4 frag(Varyings input) : SV_Target
+            {{
+                UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input);
+                float3 direction = normalize(LC_RotateDirectionY(input.directionWS, _Rotation));
+                half4 color = SAMPLE_TEXTURECUBE(_Tex, sampler_Tex, direction);
+                color.rgb = LC_ApplyExposureAndTint(color.rgb, _Tint.rgb, _Exposure);
+                return color;
+            }}
+            ENDHLSL
+        }}
+    }}
+    FallBack Off
+}}";
     }
 
     private string BuildTextureDeclarations()
