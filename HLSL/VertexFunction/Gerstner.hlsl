@@ -89,4 +89,72 @@ void MultiGerstnerWave(
     outNormal = normalize(outNormal);
 }
 
+float3 SampleMultiGerstnerWavePosition(
+    float3 worldPos,
+    float waveHeight,
+    float waveLength,
+    float waveSpeed,
+    float2 waveDir,
+    float steepness,
+    float time,
+    int waveCount)
+{
+    float3 resultPos = worldPos;
+    float3 resultNormal = float3(0.0, 1.0, 0.0);
+    MultiGerstnerWave(worldPos, waveHeight, waveLength, waveSpeed, waveDir, steepness, time, waveCount, resultPos, resultNormal);
+    return resultPos;
+}
+
+float SampleMultiGerstnerWaveHeight(
+    float2 worldXZ,
+    float baseWaterHeight,
+    float waveHeight,
+    float waveLength,
+    float waveSpeed,
+    float2 waveDir,
+    float steepness,
+    float time,
+    int waveCount)
+{
+    float3 resultPos = SampleMultiGerstnerWavePosition(
+        float3(worldXZ.x, baseWaterHeight, worldXZ.y),
+        waveHeight,
+        waveLength,
+        waveSpeed,
+        waveDir,
+        steepness,
+        time,
+        waveCount);
+
+    return resultPos.y;
+}
+
+float3 SampleMultiGerstnerWaveNormal(
+    float2 worldXZ,
+    float baseWaterHeight,
+    float waveHeight,
+    float waveLength,
+    float waveSpeed,
+    float2 waveDir,
+    float steepness,
+    float time,
+    int waveCount)
+{
+    float3 resultPos = float3(worldXZ.x, baseWaterHeight, worldXZ.y);
+    float3 resultNormal = float3(0.0, 1.0, 0.0);
+    MultiGerstnerWave(
+        resultPos,
+        waveHeight,
+        waveLength,
+        waveSpeed,
+        waveDir,
+        steepness,
+        time,
+        waveCount,
+        resultPos,
+        resultNormal);
+
+    return normalize(resultNormal);
+}
+
 #endif
